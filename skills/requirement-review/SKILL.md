@@ -19,6 +19,16 @@ compatibility: python-docx
 
 ## 工作流程
 
+### 第0步：立即确认收到（必须最先执行）
+
+收到文档后，**在做任何处理之前**，立即用 `message` 工具回复用户：
+
+```
+收到文档，正在评审中，预计需要 1-2 分钟，请稍候...
+```
+
+> ⚠️ **这一步不能跳过，不能延后。** 微信连接超时约 5 秒，不立即回复会导致用户看到「暂无法连接」。先发确认，再做处理。
+
 ### 第1步：提取文档内容
 
 收到 Word 文档后，运行提取脚本：
@@ -173,7 +183,13 @@ python scripts/extract_docx.py <需求文档.docx> /tmp/requirement-extract/
 
 ### 第5步：生成报告
 
-将评审结果保存为 JSON 文件，运行报告生成脚本：
+将评审结果保存为 JSON 文件，运行报告生成脚本前，先用 `message` 工具发送进度提示：
+
+```
+评审完成，正在生成 Word 报告...
+```
+
+然后运行报告生成脚本：
 
 ```bash
 python scripts/generate_report.py --file /tmp/review_result.json /tmp/需求评审意见.docx
