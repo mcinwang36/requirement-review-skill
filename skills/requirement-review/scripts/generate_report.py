@@ -226,8 +226,70 @@ def render_dimension_review(doc, dim_reviews):
             add_para(doc, data, indent=0.3)
 
 
+def render_core_contradiction(doc, data):
+    """渲染核心矛盾模块"""
+    cc = data.get("core_contradiction")
+    if not cc:
+        return
+    add_heading(doc, "核心矛盾", 2)
+    ctype = cc.get("type", "")
+    desc = cc.get("description", "")
+    why = cc.get("why_it_matters", "")
+    if ctype:
+        p = doc.add_paragraph()
+        p.paragraph_format.left_indent = Cm(0.3)
+        r = p.add_run(f"矛盾类型：{ctype}")
+        r.bold = True
+        r.font.size = Pt(11)
+        r.font.name = "微软雅黑"
+        r._element.rPr.rFonts.set(qn('w:eastAsia'), '微软雅黑')
+        r.font.color.rgb = hex_rgb(COLOR_FAIL)
+    if desc:
+        add_para(doc, desc, indent=0.5, size=Pt(10.5))
+    if why:
+        add_para(doc, f"如不解决：{why}", indent=0.5, color=COLOR_WARN, size=Pt(10))
+
+
+def render_next_steps(doc, data):
+    """渲染推进路径模块"""
+    ns = data.get("next_steps")
+    if not ns:
+        return
+    add_heading(doc, "推进路径", 2)
+
+    must_do = ns.get("must_do_before_start", [])
+    if must_do:
+        add_para(doc, "立项前必须解决：", bold=True, size=Pt(10.5))
+        for item in must_do:
+            add_para(doc, f"  → {item}", indent=0.5, color=COLOR_FAIL, size=Pt(10))
+
+    mvp = ns.get("mvp_scope", "")
+    if mvp:
+        add_para(doc, "MVP 范围：", bold=True, size=Pt(10.5))
+        add_para(doc, mvp, indent=0.5, size=Pt(10))
+
+    phases = ns.get("phase_plan", [])
+    if phases:
+        add_para(doc, "分阶段计划：", bold=True, size=Pt(10.5))
+        headers = ["阶段", "重点", "成功标准"]
+        rows = []
+        for ph in phases:
+            rows.append([
+                ph.get("phase", "-"),
+                ph.get("focus", "-"),
+                ph.get("success_criteria", "-"),
+            ])
+        build_table(doc, headers, rows, col_widths=[2.5, 6, 5])
+
+    defer = ns.get("defer_to_later", [])
+    if defer:
+        add_para(doc, "当前阶段暂缓：", bold=True, size=Pt(10.5))
+        for item in defer:
+            add_para(doc, f"  ✗ {item}", indent=0.5, color=COLOR_MUTED, size=Pt(10))
+
+
 def generate_report_new(data: dict, output_path: str):
-    """新版五维评审报告"""
+    """新版五维评审报告（含核心矛盾+推进路径）"""
     doc = Document()
     for section in doc.sections:
         section.top_margin = Cm(2.5)
@@ -236,7 +298,7 @@ def generate_report_new(data: dict, output_path: str):
         section.right_margin = Cm(2.5)
 
     # ── 标题 ──
-    title = doc.add_heading('AI 解决方案评审意见', level=0)
+    title = doc.add_heading('AI 需求评审意见', level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.LEFT
     for run in title.runs:
         run.font.color.rgb = hex_rgb(COLOR_PRIMARY)
@@ -271,6 +333,9 @@ def generate_report_new(data: dict, output_path: str):
     if summary:
         add_para(doc, summary, size=Pt(11))
 
+    # 核心矛盾
+    render_core_contradiction(doc, data)
+
     # 问题数量概览
     blocking = data.get("blocking_issues", [])
     high = data.get("high_risks", [])
@@ -278,6 +343,7 @@ def generate_report_new(data: dict, output_path: str):
     opts = data.get("optimizations", [])
 
     if any([blocking, high, medium, opts]):
+        add_heading(doc, "问题概览", 2)
         headers = ["问题级别", "数量", "说明"]
         rows = [
             [("阻塞问题", True, hex_rgb(COLOR_FAIL)), str(len(blocking)), "不解决无法立项或开发"],
@@ -289,8 +355,14 @@ def generate_report_new(data: dict, output_path: str):
 
     add_divider(doc)
 
-    # ── 二、问题清单 ──
-    add_heading(doc, "二、问题清单", 1)
+    # ── 二、推进路径 ──
+    add_heading(doc, "二、推进路径", 1)
+    render_next_steps(doc, data)
+
+    add_divider(doc)
+
+    # ── 三、问题清单 ──
+    add_heading(doc, "三、问题清单", 1)
     render_issue_block(doc, blocking, "🔴 阻塞问题", COLOR_FAIL)
     render_issue_block(doc, high, "🟠 高风险", COLOR_WARN)
     render_issue_block(doc, medium, "🟡 中风险", COLOR_ACCENT)
@@ -298,10 +370,10 @@ def generate_report_new(data: dict, output_path: str):
 
     add_divider(doc)
 
-    # ── 三、五维评审详情 ──
+    # ── 四、五维评审详情 ──
     dim_reviews = data.get("dimension_reviews", {})
     if dim_reviews:
-        add_heading(doc, "三、五维评审详情", 1)
+        add_heading(doc, "四、五维评审详情", 1)
         render_dimension_review(doc, dim_reviews)
         add_divider(doc)
 
