@@ -90,8 +90,13 @@ compatibility: python-docx
 
 ### 第1步：提取文档内容
 
+> ⚠️ **命令规范（必须遵守）**
+> - 所有命令必须使用**绝对路径**，禁止使用 `cd ... && python ...` 这种链式命令
+> - 正确格式：`python3 /root/.openclaw/workspace/skills/requirement-review/scripts/extract_docx.py "<文档路径>" /tmp/requirement-extract/`
+> - 如果命令执行失败，立即用 `message` 工具发一条进度消息，再尝试修正命令
+
 ```bash
-python scripts/extract_docx.py <需求文档.docx> /tmp/requirement-extract/
+python3 /root/.openclaw/workspace/skills/requirement-review/scripts/extract_docx.py "<需求文档绝对路径>" /tmp/requirement-extract/
 ```
 
 ### 第2步：读取文档与流程图
@@ -265,10 +270,10 @@ python scripts/extract_docx.py <需求文档.docx> /tmp/requirement-extract/
 评审完成，正在生成 Word 报告...
 ```
 
-然后运行：
+然后运行（使用绝对路径）：
 
 ```bash
-python scripts/generate_report.py --file /tmp/review_result.json /tmp/<文档名>_评审意见.docx
+python3 /root/.openclaw/workspace/skills/requirement-review/scripts/generate_report.py --file /tmp/review_result.json /tmp/<文档名>_评审意见.docx
 ```
 
 ### 第8步：交付
@@ -300,3 +305,4 @@ rm -rf /tmp/requirement-extract/ /tmp/review_result*.json
 - 数字评分（72/100 这类伪精确）
 - "建议进一步研究"这类废话
 - AI 痕迹（星级评分、emoji 分类标题）
+- `cd ... && python ...` 链式命令（会被 exec 安全策略拦截）
